@@ -1,237 +1,173 @@
-// script.js
+const gameContainer = document.getElementById('game-container');
+const player = document.getElementById('player');
+const restartButton = document.getElementById('restart-button');
 
-// Select the canvas and set its dimensions
-const canvas = document.getElementById('gameCanvas');
-const ctx = canvas.getContext('2d');
-canvas.width = window.innerWidth - 40; // Leave some margin
-canvas.height = window.innerHeight - 100;
+let bullets = [];
+let enemies = [];
+let gameOver = false;
 
-// Game variables
-const player = {
-  x: canvas.width / 2,
-  y: canvas.height / 2,
-  size: 10,
-  speed: 5,
-  angle: 0, // Player's direction in degrees
-  health: 100, // Player health
-};
+// Set up player movement with mouse
+gameContainer.addEventListener('mousemove', (e) => {
+  if (!gameOver) {
+    const rect = gameContainer.getBoundingClientRect();
+    const x = e.clientX - rect.left - player.offsetWidth / 2;
+    const y = e.clientY - rect.top - player.offsetHeight / 2;
 
-const enemies = [];
-const bullets = [];
-let gameOver = false; // Track if the game is over
-const maxEnemies = 5; // Maximum number of enemies at any time
-
-// Generate random enemies farther away from the player
-function spawnEnemies(count) {
-  for (let i = 0; i < count; i++) {
-    let enemyX, enemyY;
-    do {
-      enemyX = Math.random() * canvas.width;
-      enemyY = Math.random() * canvas.height;
-    } while (
-      Math.sqrt(
-        (enemyX - player.x) ** 2 + (enemyY - player.y) ** 2
-      ) < 200 // Minimum distance of 200 pixels
-    );
-
-    enemies.push({
-      x: enemyX,
-      y: enemyY,
-      size: 15,
-      speed: 2,
-    });
-  }
-}
-
-// Handle keyboard input
-const keys = {};
-window.addEventListener('keydown', (e) => (keys[e.key] = true));
-window.addEventListener('keyup', (e) => (keys[e.key] = false));
-
-// Shoot bullets in the direction the player is facing
-function shoot() {
-  const bulletSpeed = 10;
-  const angleRad = player.angle * (Math.PI / 180); // Convert angle to radians
-  bullets.push({
-    x: player.x,
-    y: player.y,
-    dx: Math.cos(angleRad) * bulletSpeed, // Horizontal velocity
-    dy: Math.sin(angleRad) * bulletSpeed, // Vertical velocity
-  });
-}
-
-window.addEventListener('keydown', (e) => {
-  if (e.key === ' ') { // Spacebar to shoot
-    shoot();
+    // Prevent player from moving outside the game container
+    if (x >= 0 && x <= gameContainer.offsetWidth - player.offsetWidth) {
+      player.style.left = `${x}px`;
+    }
+    if (y >= 0 && y <= gameContainer.offsetHeight - player.offsetHeight) {
+      player.style.top = `${y}px`;
+    }
   }
 });
 
-// Update game state
-function update() {
-  if (gameOver) return; // Stop updating if the game is over
-
-  // Move player
-  if (keys['ArrowUp'] || keys['w']) {
-    player.y -= player.speed;
-  }
-  if (keys['ArrowDown'] || keys['s']) {
-    player.y += player.speed;
-  }
-  if (keys['ArrowLeft'] || keys['a']) {
-    player.x -= player.speed;
-  }
-  if (keys['ArrowRight'] || keys['d']) {
-    player.x += player.speed;
-  }
-
-  // Rotate player
-  if (keys['q']) {
-    player.angle -= 5; // Rotate left
-  }
-  if (keys['e']) {
-    player.angle += 5; // Rotate right
-  }
-
-  // Update bullets
-  bullets.forEach((bullet, index) => {
-    bullet.x += bullet.dx;
-    bullet.y += bullet.dy;
-
-    // Remove bullets that go off-screen
-    if (
-      bullet.x < 0 ||
-      bullet.x > canvas.width ||
-      bullet.y < 0 ||
-      bullet.y > canvas.height
-    ) {
-      bullets.splice(index, 1);
-    }
-  });
-
-  // Update enemies
-  enemies.forEach((enemy, index) => {
-    const dx = player.x - enemy.x;
-    const dy = player.y - enemy.y;
-    const distance = Math.sqrt(dx * dx + dy * dy);
-
-    // Move enemies toward the player
-    enemy.x += (dx / distance) * enemy.speed;
-    enemy.y += (dy / distance) * enemy.speed;
-
-    // Check for collisions with bullets
-    bullets.forEach((bullet, bIndex) => {
-      const bdx = bullet.x - enemy.x;
-      const bdy = bullet.y - enemy.y;
-      const bDistance = Math.sqrt(bdx * bdx + bdy * bdy);
-
-      if (bDistance < enemy.size) {
-        // Enemy hit
-        enemies.splice(index, 1);
-        bullets.splice(bIndex, 1);
+// Rapid fire minigun
+gameContainer.addEventListener('mousedown', () => {
+  if (!gameOver) {
+    const shootInterval = setInterval(() => {
+      if (!gameOver) {
+        createBullet();
+      } else {
+        clearInterval(shootInterval);
       }
-    });
-
-    // Check for collision with player
-    if (distance < player.size + enemy.size) {
-      player.health -= 10; // Reduce player health
-      enemies.splice(index, 1); // Remove the enemy
-
-      if (player.health <= 0) {
-        gameOver = true; // End the game
-        showRestartButton(); // Show the restart button
-      }
-    }
-  });
-
-  // Spawn more enemies if the count is below the threshold
-  if (enemies.length < maxEnemies) {
-    spawnEnemies(maxEnemies - enemies.length);
+    }, 100);
+    gameContainer.addEventListener('mouseup', () => clearInterval(shootInterval), { once: true });
   }
+});
+
+// Create a bullet
+function createBullet() {
+  const bullet = document.createElement('div');
+  bullet.classList.add('bullet');
+  const playerRect = player.getBoundingClientRect();
+  const gameRect = gameContainer.getBoundingClientRect();
+
+  bullet.style.left = `${playerRect.left - gameRect.left + player.offsetWidth / 2 - 2.5}px`;
+  bullet.style.top = `${playerRect.top - gameRect.top}px`;
+
+  gameContainer.appendChild(bullet);
+  bullets.push(bullet);
+
+  moveBullet(bullet);
 }
 
-// Draw everything
-function draw() {
-  // Clear the canvas
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
+// Move the bullet
+function moveBullet(bullet) {
+  const interval = setInterval(() => {
+    const top = parseInt(bullet.style.top);
+    if (top <= -10 || gameOver) {
+      clearInterval(interval);
+      bullet.remove();
+      bullets = bullets.filter((b) => b !== bullet);
+    } else {
+      bullet.style.top = `${top - 10}px`;
+      checkCollision(bullet);
+    }
+  }, 20);
+}
 
-  // Draw player
-  ctx.save();
-  ctx.translate(player.x, player.y);
-  ctx.rotate((player.angle * Math.PI) / 180); // Rotate the player
-  ctx.fillStyle = 'blue';
-  ctx.fillRect(-player.size / 2, -player.size / 2, player.size, player.size);
-  ctx.restore();
+// Create enemies
+function createEnemy() {
+  const enemy = document.createElement('div');
+  enemy.classList.add('enemy');
+  const x = Math.random() * (gameContainer.offsetWidth - 40); // Random horizontal position
+  enemy.style.left = `${x}px`;
+  enemy.style.top = '0px';
 
-  // Draw bullets
-  ctx.fillStyle = 'yellow';
-  bullets.forEach((bullet) => {
-    ctx.fillRect(bullet.x - 2, bullet.y - 2, 4, 4);
-  });
+  // Assign a random speed to the enemy (between 1 and 5 pixels per frame)
+  const speed = Math.floor(Math.random() * 4) + 1; // Random speed between 1 and 5
+  enemy.dataset.speed = speed; // Store the speed in the enemy's dataset
 
-  // Draw enemies
-  ctx.fillStyle = 'red';
+  gameContainer.appendChild(enemy);
+  enemies.push(enemy);
+
+  moveEnemy(enemy);
+}
+
+// Move the enemy
+function moveEnemy(enemy) {
+  const interval = setInterval(() => {
+    const top = parseInt(enemy.style.top);
+    if (top >= gameContainer.offsetHeight || gameOver) {
+      clearInterval(interval);
+      enemy.remove();
+      enemies = enemies.filter((e) => e !== enemy);
+    } else {
+      const speed = parseInt(enemy.dataset.speed); // Retrieve the speed from the dataset
+      enemy.style.top = `${top + speed}px`; // Move the enemy based on its speed
+      checkPlayerCollision(enemy); // Check for collision with the player
+    }
+  }, 30);
+}
+
+// Check collision between bullets and enemies
+function checkCollision(bullet) {
+  const bulletRect = bullet.getBoundingClientRect();
   enemies.forEach((enemy) => {
-    ctx.beginPath();
-    ctx.arc(enemy.x, enemy.y, enemy.size, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.closePath();
+    const enemyRect = enemy.getBoundingClientRect();
+    if (
+      bulletRect.left < enemyRect.right &&
+      bulletRect.right > enemyRect.left &&
+      bulletRect.top < enemyRect.bottom &&
+      bulletRect.bottom > enemyRect.top
+    ) {
+      // Collision detected
+      bullet.remove();
+      enemy.remove();
+      bullets = bullets.filter((b) => b !== bullet);
+      enemies = enemies.filter((e) => e !== enemy);
+    }
   });
+}
 
-  // Draw health bar
-  ctx.fillStyle = 'green';
-  ctx.fillRect(10, 10, (player.health / 100) * 200, 20); // Green health bar
-  ctx.strokeStyle = 'white';
-  ctx.strokeRect(10, 10, 200, 20); // Outline of the health bar
+// Check collision between player and enemies
+function checkPlayerCollision(enemy) {
+  const playerRect = player.getBoundingClientRect();
+  const enemyRect = enemy.getBoundingClientRect();
 
-  // Display "Game Over" text
-  if (gameOver) {
-    ctx.fillStyle = 'white';
-    ctx.font = '30px Arial';
-    ctx.textAlign = 'center';
-    ctx.fillText('Game Over!', canvas.width / 2, canvas.height / 2);
+  if (
+    playerRect.left < enemyRect.right &&
+    playerRect.right > enemyRect.left &&
+    playerRect.top < enemyRect.bottom &&
+    playerRect.bottom > enemyRect.top
+  ) {
+    // Player touched by an enemy
+    gameOver = true;
+    alert('You were hit by an enemy! Game Over!');
+    restartGame(); // Restart the game automatically
   }
 }
 
-// Show restart button
-function showRestartButton() {
-  const restartButton = document.createElement('button');
-  restartButton.innerText = 'Restart';
-  restartButton.style.position = 'absolute';
-  restartButton.style.top = '50%';
-  restartButton.style.left = '50%';
-  restartButton.style.transform = 'translate(-50%, 50px)';
-  restartButton.style.padding = '10px 20px';
-  restartButton.style.fontSize = '16px';
-  restartButton.style.cursor = 'pointer';
-
-  // Add event listener to restart the game
-  restartButton.addEventListener('click', () => {
-    resetGame();
-    restartButton.remove(); // Remove the button after restarting
-  });
-
-  document.body.appendChild(restartButton);
-}
-
-// Reset the game
-function resetGame() {
-  player.x = canvas.width / 2;
-  player.y = canvas.height / 2;
-  player.angle = 0;
-  player.health = 100; // Reset health
-  bullets.length = 0;
-  enemies.length = 0;
+// Restart the game
+function restartGame() {
   gameOver = false;
-  spawnEnemies(maxEnemies); // Respawn initial enemies
+  bullets.forEach((bullet) => bullet.remove());
+  enemies.forEach((enemy) => enemy.remove());
+  bullets = [];
+  enemies = [];
+  player.style.left = '380px';
+  player.style.top = '550px';
 }
 
-// Game loop
-function gameLoop() {
-  update();
-  draw();
-  requestAnimationFrame(gameLoop);
+// Spawn enemies at regular intervals
+function spawnEnemies() {
+  setInterval(() => {
+    if (!gameOver) {
+      createEnemy();
+    }
+  }, 1000); // Spawn a new enemy every second
 }
 
 // Start the game
-spawnEnemies(maxEnemies); // Spawn initial enemies
-gameLoop();
+spawnEnemies();
+
+// Game over logic (example: after 20 seconds)
+setTimeout(() => {
+  if (!gameOver) {
+    gameOver = true;
+    alert('Time is up! Game Over!');
+    restartGame();
+  }
+}, 20000);
