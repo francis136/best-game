@@ -1,3 +1,4 @@
+
 * {
   margin: 0;
   padding: 0;
@@ -63,4 +64,118 @@ body {
   height: 40px;
   background-color: #0f0;
   border-radius: 50%;
+}
+#score {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  color: #fff;
+  font-size: 20px;
+  font-family: Arial, sans-serif;
+}
+
+.power-up {
+  position: absolute;
+  width: 30px;
+  height: 30px;
+  background-color: #ff0; /* Bright yellow */
+  border-radius: 50%;
+  animation: pulse 1s infinite; /* Pulsing animation */
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.2); /* Slightly enlarge */
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.power-up-label {
+  position: absolute;
+  top: -20px; /* Place the label above the power-up */
+  left: 50%;
+  transform: translateX(-50%);
+  color: #fff;
+  font-size: 12px;
+  font-family: Arial, sans-serif;
+  pointer-events: none; /* Ensure the label doesn't interfere with gameplay */
+}.bomb {
+  position: absolute;
+  width: 30px;
+  height: 30px;
+  background-color: #f00; /* Red color */
+  border-radius: 50%;
+  animation: shake 0.5s infinite; /* Shaking animation */
+}
+
+@keyframes shake {
+  0% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-2px);
+  }
+  50% {
+    transform: translateX(2px);
+  }
+  75% {
+    transform: translateX(-2px);
+  }
+  100% {
+    transform: translateX(0);
+  }
+}
+
+.bomb-label {
+  position: absolute;
+  top: -20px; /* Place the label above the bomb */
+  left: 50%;
+  transform: translateX(-50%);
+  color: #fff;
+  font-size: 12px;
+  font-family: Arial, sans-serif;
+  pointer-events: none; /* Ensure the label doesn't interfere with gameplay */
+}
+
+.bomb {
+  position: absolute;
+  width: 30px;
+  height: 30px;
+  background-color: #f00; /* Red color */
+  border-radius: 50%;
+  animation: shake 0.5s infinite; /* Shaking animation */
+}
+
+@keyframes shake {
+  0% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-2px);
+  }
+  50% {
+    transform: translateX(2px);
+  }
+  75% {
+    transform: translateX(-2px);
+  }
+  100% {
+    transform: translateX(0);
+  }
+}
+
+.bomb-label {
+  position: absolute;
+  top: -20px; /* Place the label above the bomb */
+  left: 50%;
+  transform: translateX(-50%);
+  color: #fff;
+  font-size: 12px;
+  font-family: Arial, sans-serif;
+  pointer-events: none; /* Ensure the label doesn't interfere with gameplay */
 }
